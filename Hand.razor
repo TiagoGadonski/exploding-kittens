@@ -1,0 +1,11 @@
+﻿@code {
+    [Parameter] public List<string> Cards { get; set; }
+    [Parameter] public EventCallback<string> OnPlayCard { get; set; }
+}
+
+<div class="hand">
+    @foreach (var card in Cards)
+    {
+        <Card CardName="@card" OnPlayCard="OnPlayCard" />
+    }
+</div>

@@ -1,0 +1,13 @@
+﻿@code {
+    [Parameter] public string CardName { get; set; }
+    [Parameter] public EventCallback<string> OnPlayCard { get; set; }
+
+    private async Task PlayCard()
+    {
+        await OnPlayCard.InvokeAsync(CardName);
+    }
+}
+
+<div class="card" @onclick="PlayCard">
+    <p>@CardName</p>
+</div>
