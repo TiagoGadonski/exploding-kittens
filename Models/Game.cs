@@ -21,14 +21,21 @@
         private void InitializeDeck()
         {
             // Adicionar cartas ao baralho (exemplo básico, ajuste conforme necessário)
-            for (int i = 0; i < 4; i++) Deck.Push(new Card("Exploding Kitten", "Exploding Kitten"));
-            for (int i = 0; i < 6; i++) Deck.Push(new Card("Defuse", "Defuse"));
-            for (int i = 0; i < 5; i++) Deck.Push(new Card("Attack", "Attack"));
-            for (int i = 0; i < 4; i++) Deck.Push(new Card("Skip", "Skip"));
-            for (int i = 0; i < 4; i++) Deck.Push(new Card("Favor", "Favor"));
-            for (int i = 0; i < 4; i++) Deck.Push(new Card("Shuffle", "Shuffle"));
-            for (int i = 0; i < 4; i++) Deck.Push(new Card("See the Future", "See the Future"));
-            for (int i = 0; i < 4; i++) Deck.Push(new Card("Nope", "Nope"));
+            for (int j = 0; j < 4; j++) Deck.Push(new Card("Exploding Kitten", "Exploding Kitten"));
+            for (int j = 0; j < 6; j++) Deck.Push(new Card("Defuse", "Defuse"));
+            for (int j = 0; j < 5; j++) Deck.Push(new Card("Attack", "Attack"));
+            for (int j = 0; j < 4; j++) Deck.Push(new Card("Skip", "Skip"));
+            for (int j = 0; j < 4; j++) Deck.Push(new Card("Favor", "Favor"));
+            for (int j = 0; j < 4; j++) Deck.Push(new Card("Shuffle", "Shuffle"));
+            for (int j = 0; j < 4; j++) Deck.Push(new Card("See the Future", "See the Future"));
+            for (int j = 0; j < 4; j++) Deck.Push(new Card("Nope", "Nope"));
+
+            // Adicionar cartas de gatos
+            for (int j = 0; j < 4; j++) Deck.Push(Card.Cat1);
+            for (int j = 0; j < 4; j++) Deck.Push(Card.Cat2);
+            for (int j = 0; j < 4; j++) Deck.Push(Card.Cat3);
+            for (int j = 0; j < 4; j++) Deck.Push(Card.Cat4);
+            for (int j = 0; j < 4; j++) Deck.Push(Card.Cat5);
         }
 
         private void ShuffleDeck()
@@ -47,7 +54,7 @@
             foreach (var player in Players)
             {
                 // Distribuir 7 cartas para cada jogador
-                for (int i = 0; i < 7; i++)
+                for (int j = 0; j < 7; j++)
                 {
                     player.AddCard(Deck.Pop());
                 }
@@ -56,12 +63,16 @@
             }
 
             // Adicionar cartas "Exploding Kitten" ao baralho
-            for (int i = 0; i < Players.Count - 1; i++)
+            for (int j = 0; j < Players.Count - 1; j++)
             {
                 Deck.Push(new Card("Exploding Kitten", "Exploding Kitten"));
             }
 
             ShuffleDeck();
+
+            // Selecionar um jogador inicial aleatoriamente
+            var rnd = new Random();
+            CurrentPlayerIndex = rnd.Next(Players.Count);
         }
 
         public Player GetCurrentPlayer()
@@ -101,10 +112,46 @@
                 case "Nope":
                     // Implementar lógica de cancelar ação
                     break;
+                case "Cat":
+                    // Implementar lógica de cartas de gato
+                    CheckCatPairs(player);
+                    break;
             }
 
             // Passar para o próximo jogador
             CurrentPlayerIndex = (CurrentPlayerIndex + 1) % Players.Count;
+        }
+
+        private void CheckCatPairs(Player player)
+        {
+            var catGroups = player.Hand.Where(c => c.Type == "Cat")
+                                       .GroupBy(c => c.Name)
+                                       .Where(g => g.Count() >= 2);
+
+            foreach (var group in catGroups)
+            {
+                if (group.Count() >= 2)
+                {
+                    // Remove a carta do par do jogador
+                    var cardToRemove = group.First();
+                    player.RemoveCard(cardToRemove);
+                    player.RemoveCard(cardToRemove);
+
+                    // Roubar uma carta aleatória de outro jogador
+                    var random = new Random();
+                    var otherPlayers = Players.Where(p => p != player).ToList();
+                    if (otherPlayers.Count > 0)
+                    {
+                        var targetPlayer = otherPlayers[random.Next(otherPlayers.Count)];
+                        if (targetPlayer.Hand.Count > 0)
+                        {
+                            var stolenCard = targetPlayer.Hand[random.Next(targetPlayer.Hand.Count)];
+                            player.AddCard(stolenCard);
+                            targetPlayer.RemoveCard(stolenCard);
+                        }
+                    }
+                }
+            }
         }
 
         public void EndTurn()

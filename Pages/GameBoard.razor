@@ -3,18 +3,39 @@
 @using BlazorApp1.Models
 @inject NavigationManager Navigation
 
+<h3>Game Board</h3>
+
+<button @onclick="ShowPlayerCountInput">Iniciar Jogo</button>
+
+@if (showPlayerCountInput)
+{
+    <div>
+        <label for="playerCount">Número de Jogadores:</label>
+        <input type="number" id="playerCount" @bind="playerCount" min="2" max="10" />
+        <button @onclick="StartGame">Começar</button>
+    </div>
+}
+
+@if (_cards.Count > 0)
+{
+    <Hand Cards="_cards" OnPlayCard="PlayCard" />
+}
+
+<ul>
+    @foreach (var message in _messages)
+    {
+        <li>@message</li>
+    }
+</ul>
+
 @code {
     private HubConnection _hubConnection;
     private List<string> _messages = new List<string>();
-    private List<BlazorApp1.Models.Card> _cards = new List<BlazorApp1.Models.Card>
-    {
-        new BlazorApp1.Models.Card("Attack", "Attack"),
-        new BlazorApp1.Models.Card("Skip", "Skip"),
-        new BlazorApp1.Models.Card("Defuse", "Defuse"),
-        new BlazorApp1.Models.Card("Exploding Kitten", "Exploding Kitten")
-    };
+    private List<BlazorApp1.Models.Card> _cards = new List<BlazorApp1.Models.Card>();
     private string _currentPlayer = "Player1";
-    private bool isMyTurn = true; // Set to true for testing, you might want to handle this dynamically
+    private bool isMyTurn = false;
+    private bool showPlayerCountInput = false;
+    private int playerCount = 2;
 
     protected override async Task OnInitializedAsync()
     {
@@ -33,6 +54,17 @@
         {
             _messages.Add("Game started");
             InvokeAsync(StateHasChanged);
+            // Aguardando atualização das cartas dos jogadores
+        });
+
+        _hubConnection.On<string, List<BlazorApp1.Models.Card>>("CardsDistributed", (playerName, cards) =>
+        {
+            if (playerName == _currentPlayer)
+            {
+                _cards = cards;
+                isMyTurn = true;
+                InvokeAsync(StateHasChanged);
+            }
         });
 
         _hubConnection.On<string, string>("CardPlayed", (playerName, cardName) =>
@@ -52,6 +84,17 @@
         await _hubConnection.StartAsync();
     }
 
+    private void ShowPlayerCountInput()
+    {
+        showPlayerCountInput = true;
+    }
+
+    private async Task StartGame()
+    {
+        await _hubConnection.SendAsync("StartGame", playerCount);
+        showPlayerCountInput = false;
+    }
+
     private async Task PlayCard(string cardName)
     {
         if (isMyTurn)
@@ -65,14 +108,3 @@
         await _hubConnection.DisposeAsync();
     }
 }
-
-<div>
-    <h3>Game Board</h3>
-    <Hand Cards="_cards" OnPlayCard="PlayCard" />
-    <ul>
-        @foreach (var message in _messages)
-        {
-            <li>@message</li>
-        }
-    </ul>
-</div>

@@ -13,6 +13,8 @@
 <div class="hand">
     @foreach (var card in Cards)
     {
-        <Card CardName="@card.Name" OnPlayCard="OnPlayCard" />
+        <div class="card" @onclick="() => PlayCard(card.Name)">
+            <p>@card.Name</p>
+        </div>
     }
 </div>

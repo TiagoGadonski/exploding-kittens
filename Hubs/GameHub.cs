@@ -5,11 +5,11 @@ public class GameHub : Hub
 {
     private static Game game;
 
-    public async Task JoinGame(string playerName, int numberOfPlayers)
+    public async Task JoinGame(string playerName)
     {
         if (game == null || game.IsGameOver())
         {
-            game = new Game(numberOfPlayers);
+            game = new Game(2); // Inicialmente configurado para dois jogadores
         }
 
         var player = new Player(Context.ConnectionId, playerName);
@@ -18,12 +18,20 @@ public class GameHub : Hub
         await Clients.All.SendAsync("PlayerJoined", playerName);
     }
 
-    public async Task StartGame()
+    public async Task StartGame(int numberOfPlayers)
     {
-        if (game != null && game.Players.Count > 0)
+        if (game == null || game.IsGameOver())
         {
-            game.StartGame();
-            await Clients.All.SendAsync("GameStarted");
+            game = new Game(numberOfPlayers);
+        }
+
+        game.StartGame();
+        await Clients.All.SendAsync("GameStarted");
+
+        // Distribuir cartas aos jogadores
+        foreach (var player in game.Players)
+        {
+            await Clients.Client(player.Id).SendAsync("CardsDistributed", player.Name, player.Hand);
         }
     }
 
@@ -31,7 +39,6 @@ public class GameHub : Hub
     {
         if (game == null || game.Players.Count == 0)
         {
-            // Jogo não iniciado ou sem jogadores
             return;
         }
 
@@ -59,7 +66,6 @@ public class GameHub : Hub
     {
         if (game == null || game.Players.Count == 0)
         {
-            // Jogo não iniciado ou sem jogadores
             return;
         }
 
