@@ -1,0 +1,18 @@
+﻿@using BlazorApp1.Models
+
+@code {
+    [Parameter] public List<BlazorApp1.Models.Card> Cards { get; set; }
+    [Parameter] public EventCallback<string> OnPlayCard { get; set; }
+
+    private async Task PlayCard(string cardName)
+    {
+        await OnPlayCard.InvokeAsync(cardName);
+    }
+}
+
+<div class="hand">
+    @foreach (var card in Cards)
+    {
+        <Card CardName="@card.Name" OnPlayCard="OnPlayCard" />
+    }
+</div>

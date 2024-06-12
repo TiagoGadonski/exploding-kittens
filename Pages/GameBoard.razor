@@ -1,0 +1,78 @@
+﻿@page "/gameboard"
+@using Microsoft.AspNetCore.SignalR.Client
+@using BlazorApp1.Models
+@inject NavigationManager Navigation
+
+@code {
+    private HubConnection _hubConnection;
+    private List<string> _messages = new List<string>();
+    private List<BlazorApp1.Models.Card> _cards = new List<BlazorApp1.Models.Card>
+    {
+        new BlazorApp1.Models.Card("Attack", "Attack"),
+        new BlazorApp1.Models.Card("Skip", "Skip"),
+        new BlazorApp1.Models.Card("Defuse", "Defuse"),
+        new BlazorApp1.Models.Card("Exploding Kitten", "Exploding Kitten")
+    };
+    private string _currentPlayer = "Player1";
+    private bool isMyTurn = true; // Set to true for testing, you might want to handle this dynamically
+
+    protected override async Task OnInitializedAsync()
+    {
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/gamehub"))
+            .Build();
+
+        _hubConnection.On<string>("PlayerJoined", (playerName) =>
+        {
+            var msg = $"{playerName} joined the game";
+            _messages.Add(msg);
+            InvokeAsync(StateHasChanged);
+        });
+
+        _hubConnection.On("GameStarted", () =>
+        {
+            _messages.Add("Game started");
+            InvokeAsync(StateHasChanged);
+        });
+
+        _hubConnection.On<string, string>("CardPlayed", (playerName, cardName) =>
+        {
+            var msg = $"{playerName} played {cardName}";
+            _messages.Add(msg);
+            InvokeAsync(StateHasChanged);
+        });
+
+        _hubConnection.On<string>("GameOver", (winner) =>
+        {
+            var msg = $"Game over! {winner} wins!";
+            _messages.Add(msg);
+            InvokeAsync(StateHasChanged);
+        });
+
+        await _hubConnection.StartAsync();
+    }
+
+    private async Task PlayCard(string cardName)
+    {
+        if (isMyTurn)
+        {
+            await _hubConnection.SendAsync("PlayCard", _currentPlayer, cardName);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _hubConnection.DisposeAsync();
+    }
+}
+
+<div>
+    <h3>Game Board</h3>
+    <Hand Cards="_cards" OnPlayCard="PlayCard" />
+    <ul>
+        @foreach (var message in _messages)
+        {
+            <li>@message</li>
+        }
+    </ul>
+</div>
